@@ -232,6 +232,7 @@ class BaseQuerySet(object):
         """
         queryset = self.clone()
         queryset = queryset.order_by().limit(2)
+        # queryset = queryset.limit(2)
         queryset = queryset.filter(*q_objs, **query)
 
         try:
