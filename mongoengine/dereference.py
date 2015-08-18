@@ -38,7 +38,7 @@ class DeReference(object):
         if instance and isinstance(instance, (Document, EmbeddedDocument,
                                               TopLevelDocumentMetaclass)):
             doc_type = instance._fields.get(name)
-            while hasattr(doc_type, 'field'):
+            if hasattr(doc_type, 'field'):
                 doc_type = doc_type.field
 
             if isinstance(doc_type, ReferenceField):
@@ -53,19 +53,22 @@ class DeReference(object):
                     return items
                 elif not field.dbref:
                     if not hasattr(items, 'items'):
+                        items = [field.to_python(v)
+                                 if not isinstance(v, (DBRef, Document)) else v
+                                 for v in items]
 
-                        def _get_items(items):
-                            new_items = []
-                            for v in items:
-                                if isinstance(v, list):
-                                    new_items.append(_get_items(v))
-                                elif not isinstance(v, (DBRef, Document)):
-                                    new_items.append(field.to_python(v))
-                                else:
-                                    new_items.append(v)
-                            return new_items
-
-                        items = _get_items(items)
+                        # def _get_items(items):
+                        #     new_items = []
+                        #     for v in items:
+                        #         if isinstance(v, list):
+                        #             new_items.append(_get_items(v))
+                        #         elif not isinstance(v, (DBRef, Document)):
+                        #             new_items.append(field.to_python(v))
+                        #         else:
+                        #             new_items.append(v)
+                        #     return new_items
+                        #
+                        # items = _get_items(items)
                     else:
                         items = dict([
                             (k, field.to_python(v))
