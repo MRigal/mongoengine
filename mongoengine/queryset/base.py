@@ -170,8 +170,9 @@ class BaseQuerySet(object):
     def _has_data(self):
         """ Retrieves whether cursor has any data. """
 
-        queryset = self.order_by()
-        return False if queryset.first() is None else True
+        # queryset = self.order_by()
+        # return False if queryset.first() is None else True
+        return False if self.first() is None else True
 
     def __nonzero__(self):
         """ Avoid to open all records in an if stmt in Py2. """
