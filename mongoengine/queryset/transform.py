@@ -106,7 +106,7 @@ def query(_doc_cls=None, **query):
             if op in GEO_OPERATORS:
                 value = _geo_operator(field, op, value)
             elif op in CUSTOM_OPERATORS:
-                if op in ('elem_match', 'match'):
+                if op in ('elem_match', 'match'):  # TODO: clean
                     value = field.prepare_query_value(op, value)
                     value = {"$elemMatch": value}
                 else:

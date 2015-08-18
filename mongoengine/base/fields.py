@@ -16,6 +16,7 @@ __all__ = ("BaseField", "ComplexBaseField",
            "ObjectIdField", "GeoJsonBaseField")
 
 
+# TODO: clean
 UPDATE_OPERATORS = set(['set', 'unset', 'inc', 'dec', 'pop', 'push',
                         'push_all', 'pull', 'pull_all', 'add_to_set',
                         'set_on_insert', 'min', 'max'])
@@ -114,6 +115,7 @@ class BaseField(object):
 
         # If setting to None and there is a default
         # Then set the value to the default value
+        # TODO: clean!
         if value is None:
             if self.null:
                 value = None

@@ -84,7 +84,7 @@ class BaseDocument(object):
         else:
             self._data = SemiStrictDict.create(
                 allowed_keys=self._fields_ordered)()
-
+        # TODO: clean!
         self._data = {}
         self._dynamic_fields = SON()
 
