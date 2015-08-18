@@ -79,11 +79,11 @@ class BaseDocument(object):
                     ).format(var, self._class_name)
                     raise FieldDoesNotExist(msg)
 
-        if self.STRICT and not self._dynamic:
-            self._data = StrictDict.create(allowed_keys=self._fields_ordered)()
-        else:
-            self._data = SemiStrictDict.create(
-                allowed_keys=self._fields_ordered)()
+        # if self.STRICT and not self._dynamic:
+        #     self._data = StrictDict.create(allowed_keys=self._fields_ordered)()
+        # else:
+        #     # self._data = SemiStrictDict.create(
+        #     #     allowed_keys=self._fields_ordered)()
         # TODO: clean!
         self._data = {}
         self._dynamic_fields = SON()
