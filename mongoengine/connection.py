@@ -118,19 +118,20 @@ def get_connection(alias=DEFAULT_CONNECTION_NAME, reconnect=False):
                 connection_class = MongoReplicaSetClient
 
         try:
-            connection = None
-            # check for shared connections
-            connection_settings_iterator = (
-                (db_alias, settings.copy()) for db_alias, settings in _connection_settings.iteritems())
-            for db_alias, connection_settings in connection_settings_iterator:
-                connection_settings.pop('name', None)
-                connection_settings.pop('username', None)
-                connection_settings.pop('password', None)
-                if conn_settings == connection_settings and _connections.get(db_alias, None):
-                    connection = _connections[db_alias]
-                    break
-
-            _connections[alias] = connection if connection else connection_class(**conn_settings)
+            _connections[alias] = connection_class(**conn_settings)
+            # connection = None
+            # # check for shared connections
+            # connection_settings_iterator = (
+            #     (db_alias, settings.copy()) for db_alias, settings in _connection_settings.iteritems())
+            # for db_alias, connection_settings in connection_settings_iterator:
+            #     connection_settings.pop('name', None)
+            #     connection_settings.pop('username', None)
+            #     connection_settings.pop('password', None)
+            #     if conn_settings == connection_settings and _connections.get(db_alias, None):
+            #         connection = _connections[db_alias]
+            #         break
+            #
+            # _connections[alias] = connection if connection else connection_class(**conn_settings)
         except Exception, e:
             raise ConnectionError("Cannot connect to database %s :\n%s" % (alias, e))
     return _connections[alias]
