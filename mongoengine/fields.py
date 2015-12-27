@@ -318,9 +318,8 @@ class DecimalField(BaseField):
         if value is None:
             return value
 
-        # Convert to string for python 2.6 before casting to Decimal
         try:
-            value = decimal.Decimal("%s" % value)
+            value = decimal.Decimal(value)
         except decimal.InvalidOperation:
             return value
         return value.quantize(decimal.Decimal(".%s" % ("0" * self.precision)), rounding=self.rounding)

@@ -448,7 +448,6 @@ class ObjectIdField(BaseField):
             try:
                 return ObjectId(unicode(value))
             except Exception, e:
-                # e.message attribute has been deprecated since Python 2.6
                 self.error(unicode(e))
         return value
 

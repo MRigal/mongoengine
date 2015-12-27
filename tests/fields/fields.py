@@ -57,7 +57,7 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(
             data_to_be_saved, ['age', 'created', 'name', 'userid'])
 
-        self.assertTrue(person.validate() is None)
+        self.assertIsNone(person.validate())
 
         self.assertEqual(person.name, person.name)
         self.assertEqual(person.age, person.age)
@@ -90,7 +90,7 @@ class FieldTest(unittest.TestCase):
         data_to_be_saved = sorted(person.to_mongo().keys())
         self.assertEqual(data_to_be_saved, ['age', 'created', 'userid'])
 
-        self.assertTrue(person.validate() is None)
+        self.assertIsNone(person.validate())
 
         self.assertEqual(person.name, person.name)
         self.assertEqual(person.age, person.age)
@@ -125,7 +125,7 @@ class FieldTest(unittest.TestCase):
         data_to_be_saved = sorted(person.to_mongo().keys())
         self.assertEqual(data_to_be_saved, ['age', 'created', 'userid'])
 
-        self.assertTrue(person.validate() is None)
+        self.assertIsNone(person.validate())
 
         self.assertEqual(person.name, person.name)
         self.assertEqual(person.age, person.age)
@@ -159,7 +159,7 @@ class FieldTest(unittest.TestCase):
         data_to_be_saved = sorted(person.to_mongo().keys())
         self.assertEqual(data_to_be_saved, ['age', 'created', 'userid'])
 
-        self.assertTrue(person.validate() is None)
+        self.assertIsNone(person.validate())
 
         self.assertEqual(person.name, person.name)
         self.assertEqual(person.age, person.age)
@@ -221,7 +221,7 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(ret.int_fld, None)
         self.assertEqual(ret.flt_fld, None)
 
-        # Return current time if retrived value is None.
+        # Return current time if retrieved value is None.
         self.assertTrue(isinstance(ret.comp_dt_fld, datetime.datetime))
 
     def test_not_required_handles_none_from_database(self):
@@ -257,7 +257,7 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(ret.str_fld, None)
         self.assertEqual(ret.int_fld, None)
         self.assertEqual(ret.flt_fld, None)
-        # Return current time if retrived value is None.
+        # Return current time if retrieved value is None.
         self.assertTrue(isinstance(ret.comp_dt_fld, datetime.datetime))
 
         self.assertRaises(ValidationError, ret.validate)
@@ -759,11 +759,11 @@ class FieldTest(unittest.TestCase):
 
         for values in itertools.product([2014], mm, dd, hh, ii, ss, microsecond):
             stored = LogEntry(date=datetime.datetime(*values)).to_mongo()['date']
-            self.assertTrue(re.match('^\d{4},\d{2},\d{2},\d{2},\d{2},\d{2},\d{6}$', stored) is not None)
+            self.assertIsNotNone(re.match('^\d{4},\d{2},\d{2},\d{2},\d{2},\d{2},\d{6}$', stored))
 
         # Test separator
         stored = LogEntry(date_with_dots=datetime.datetime(2014, 1, 1)).to_mongo()['date_with_dots']
-        self.assertTrue(re.match('^\d{4}.\d{2}.\d{2}.\d{2}.\d{2}.\d{2}.\d{6}$', stored) is not None)
+        self.assertIsNotNone(re.match('^\d{4}.\d{2}.\d{2}.\d{2}.\d{2}.\d{2}.\d{6}$', stored))
 
         LogEntry.drop_collection()
 
@@ -2699,8 +2699,7 @@ class FieldTest(unittest.TestCase):
         att = Attachment(id=binary_id).save()
         self.assertEqual(1, Attachment.objects.count())
         self.assertEqual(1, Attachment.objects.filter(id=att.id).count())
-        # TODO use assertIsNotNone once Python 2.6 support is dropped
-        self.assertTrue(Attachment.objects.filter(id=att.id).first() is not None)
+        self.assertIsNotNone(Attachment.objects.filter(id=att.id).first())
         att.delete()
         self.assertEqual(0, Attachment.objects.count())
 
@@ -2715,8 +2714,7 @@ class FieldTest(unittest.TestCase):
         binary_id = uuid.uuid4().bytes
         att = Attachment(id=binary_id).save()
         self.assertEqual(1, Attachment.objects.filter(id=binary_id).count())
-        # TODO use assertIsNotNone once Python 2.6 support is dropped
-        self.assertTrue(Attachment.objects.filter(id=binary_id).first() is not None)
+        self.assertIsNotNone(Attachment.objects.filter(id=binary_id).first())
         att.delete()
         self.assertEqual(0, Attachment.objects.count())
 
@@ -3338,17 +3336,17 @@ class FieldTest(unittest.TestCase):
             email = EmailField()
 
         user = User(email="ross@example.com")
-        self.assertTrue(user.validate() is None)
+        self.assertIsNone(user.validate())
 
         user = User(email="ross@example.co.uk")
-        self.assertTrue(user.validate() is None)
+        self.assertIsNone(user.validate())
 
         user = User(email=("Kofq@rhom0e4klgauOhpbpNdogawnyIKvQS0wk2mjqrgGQ5S"
                            "aJIazqqWkm7.net"))
-        self.assertTrue(user.validate() is None)
+        self.assertIsNone(user.validate())
 
         user = User(email="new-tld@example.technology")
-        self.assertTrue(user.validate() is None)
+        self.assertIsNone(user.validate())
 
         user = User(email='me@localhost')
         self.assertRaises(ValidationError, user.validate)
@@ -3366,7 +3364,7 @@ class FieldTest(unittest.TestCase):
 
         # Passes regex validation
         user = User(email='me@example.com')
-        self.assertTrue(user.validate() is None)
+        self.assertIsNone(user.validate())
 
     def test_tuples_as_tuples(self):
         """
@@ -3395,7 +3393,7 @@ class FieldTest(unittest.TestCase):
         doc.items = tuples
         doc.save()
         x = TestDoc.objects().get()
-        self.assertTrue(x is not None)
+        self.assertIsNotNone(x)
         self.assertTrue(len(x.items) == 1)
         self.assertTrue(tuple(x.items[0]) in tuples)
         self.assertTrue(x.items[0] in tuples)

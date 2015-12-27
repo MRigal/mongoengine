@@ -68,7 +68,7 @@ class InstanceTest(unittest.TestCase):
 
     def assertHasInstance(self, field, instance):
         self.assertTrue(hasattr(field, "_instance"))
-        self.assertTrue(field._instance is not None)
+        self.assertIsNotNone(field._instance)
         if isinstance(field._instance, weakref.ProxyType):
             self.assertTrue(field._instance.__eq__(instance))
         else:
@@ -2741,7 +2741,7 @@ class InstanceTest(unittest.TestCase):
         log.machine = "Localhost"
         log.save()
 
-        self.assertTrue(log.id is not None)
+        self.assertIsNotNone(log.id)
 
         log.log = "Saving"
         log.save()
@@ -2766,7 +2766,7 @@ class InstanceTest(unittest.TestCase):
         bar_doc = Bar(foo=foo_doc, bar='world')
         bar_doc.save()
 
-        self.assertTrue(bar_doc.id is not None)
+        self.assertIsNotNone(bar_doc.id)
 
         bar_doc.bar = 'baz'
         bar_doc.save()
@@ -2792,7 +2792,7 @@ class InstanceTest(unittest.TestCase):
         log.machine = "Localhost"
         log.save()
 
-        self.assertTrue(log.id is not None)
+        self.assertIsNotNone(log.id)
 
         log.log = "Saving"
         log.save()

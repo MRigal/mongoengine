@@ -112,7 +112,7 @@ class FileTest(unittest.TestCase):
         result.the_file.delete()
 
         # Ensure deleted file returns None
-        self.assertTrue(result.the_file.read() is None)
+        self.assertIsNone(result.the_file.read())
 
     def test_file_fields_stream_after_none(self):
         """Ensure that a file field can be written to after it has been saved as
@@ -148,7 +148,7 @@ class FileTest(unittest.TestCase):
         result.the_file.delete()
 
         # Ensure deleted file returns None
-        self.assertTrue(result.the_file.read() is None)
+        self.assertIsNone(result.the_file.read())
 
     def test_file_fields_set(self):
 
