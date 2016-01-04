@@ -13,6 +13,7 @@ from bson import json_util
 import pymongo
 import pymongo.errors
 from pymongo.common import validate_read_preference
+from pymongo.collection import ReturnDocument
 
 from mongoengine import signals
 from mongoengine.connection import get_db
@@ -25,9 +26,6 @@ from mongoengine.python_support import IS_PYMONGO_3
 from mongoengine.queryset import transform
 from mongoengine.queryset.field_list import QueryFieldList
 from mongoengine.queryset.visitor import Q, QNode
-
-if IS_PYMONGO_3:
-    from pymongo.collection import ReturnDocument
 
 
 __all__ = ('BaseQuerySet', 'DO_NOTHING', 'NULLIFY', 'CASCADE', 'DENY', 'PULL')
@@ -548,31 +546,26 @@ class BaseQuerySet(object):
 
         queryset = self.clone()
         query = queryset._query
-        if not IS_PYMONGO_3 or not remove:
+        if not remove:
             update = transform.update(queryset._document, **update)
         sort = queryset._ordering
 
         try:
-            if IS_PYMONGO_3:
-                if full_response:
-                    msg = "With PyMongo 3+, it is not possible anymore to get the full response."
-                    warnings.warn(msg, DeprecationWarning)
-                if remove:
-                    result = queryset._collection.find_one_and_delete(
-                        query, sort=sort, **self._cursor_args)
-                else:
-                    if new:
-                        return_doc = ReturnDocument.AFTER
-                    else:
-                        return_doc = ReturnDocument.BEFORE
-                    result = queryset._collection.find_one_and_update(
-                        query, update, upsert=upsert, sort=sort, return_document=return_doc,
-                        **self._cursor_args)
-
+            if full_response:
+                msg = "With PyMongo 3+, it is not possible anymore to get the full response."
+                warnings.warn(msg, DeprecationWarning)
+            if remove:
+                result = queryset._collection.find_one_and_delete(
+                    query, sort=sort, **self._cursor_args)
             else:
-                result = queryset._collection.find_and_modify(
-                    query, update, upsert=upsert, sort=sort, remove=remove, new=new,
-                    full_response=full_response, **self._cursor_args)
+                if new:
+                    return_doc = ReturnDocument.AFTER
+                else:
+                    return_doc = ReturnDocument.BEFORE
+                result = queryset._collection.find_one_and_update(
+                    query, update, upsert=upsert, sort=sort, return_document=return_doc,
+                    **self._cursor_args)
+
         except pymongo.errors.DuplicateKeyError, err:
             raise NotUniqueError(u"Update failed (%s)" % err)
         except pymongo.errors.OperationFailure, err:
@@ -1436,7 +1429,6 @@ class BaseQuerySet(object):
     @property
     def _cursor_args(self):
         if not IS_PYMONGO_3:
-            fields_name = 'fields'
             cursor_args = {
                 'timeout': self._timeout,
                 'snapshot': self._snapshot
@@ -1446,7 +1438,6 @@ class BaseQuerySet(object):
             else:
                 cursor_args['slave_okay'] = self._slave_okay
         else:
-            fields_name = 'projection'
             # snapshot is not handled at all by PyMongo 3+
             # TODO: evaluate similar possibilities using modifiers
             if self._snapshot:
@@ -1456,13 +1447,13 @@ class BaseQuerySet(object):
                 'no_cursor_timeout': self._timeout
             }
         if self._loaded_fields:
-            cursor_args[fields_name] = self._loaded_fields.as_dict()
+            cursor_args['projection'] = self._loaded_fields.as_dict()
 
         if self._search_text:
-            if fields_name not in cursor_args:
-                cursor_args[fields_name] = {}
+            if 'projection' not in cursor_args:
+                cursor_args['projection'] = {}
 
-            cursor_args[fields_name]['_text_score'] = {'$meta': "textScore"}
+            cursor_args['projection']['_text_score'] = {'$meta': "textScore"}
 
         return cursor_args
 
@@ -1473,6 +1464,7 @@ class BaseQuerySet(object):
             # In PyMongo 3+, we define the read preference on a collection
             # level, not a cursor level. Thus, we need to get a cloned
             # collection object using `with_options` first.
+            # TODO: enhance
             if IS_PYMONGO_3 and self._read_preference is not None:
                 self._cursor_obj = self._collection\
                     .with_options(read_preference=self._read_preference)\

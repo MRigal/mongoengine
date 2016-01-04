@@ -8,8 +8,7 @@ try:
 except ImportError:
     pass
 
-DESCRIPTION = 'MongoEngine is a Python Object-Document ' + \
-'Mapper for working with MongoDB.'
+DESCRIPTION = 'MongoEngine is a Python Object-Document Mapper for working with MongoDB.'
 LONG_DESCRIPTION = None
 try:
     LONG_DESCRIPTION = open('README.rst').read()
@@ -22,7 +21,7 @@ def get_version(version_tuple):
         return '.'.join(map(str, version_tuple[:-1])) + version_tuple[-1]
     return '.'.join(map(str, version_tuple))
 
-# Dirty hack to get version number from monogengine/__init__.py - we can't
+# Dirty hack to get version number from mongoengine/__init__.py - we can't
 # import it as it depends on PyMongo and PyMongo isn't installed until this
 # file is read
 init = os.path.join(os.path.dirname(__file__), 'mongoengine', '__init__.py')
@@ -48,16 +47,14 @@ CLASSIFIERS = [
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 
-extra_opts = {"packages": find_packages(exclude=["tests", "tests.*"])}
+extra_opts = {"tests_require": ['nose', 'rednose', 'coverage', 'blinker', 'Pillow>=2.0.0', 'python-dateutil']}
 if sys.version_info[0] == 3:
     extra_opts['use_2to3'] = True
-    extra_opts['tests_require'] = ['nose', 'rednose', 'coverage', 'blinker', 'Pillow>=2.0.0']
-    if "test" in sys.argv or "nosetests" in sys.argv:
-        extra_opts['packages'] = find_packages()
-        extra_opts['package_data'] = {"tests": ["fields/mongoengine.png", "fields/mongodb_leaf.png"]}
+if "test" in sys.argv or "nosetests" in sys.argv:
+    extra_opts['packages'] = find_packages()
+    extra_opts['package_data'] = {"tests": ["fields/mongoengine.png", "fields/mongodb_leaf.png"]}
 else:
-    # coverage 4 does not support Python 3.2 anymore
-    extra_opts['tests_require'] = ['nose', 'rednose', 'coverage==3.7.1', 'blinker', 'Pillow>=2.0.0', 'python-dateutil']
+    extra_opts['packages'] = find_packages(exclude=["tests", "tests.*"])
 
 setup(name='mongoengine',
       version=VERSION,

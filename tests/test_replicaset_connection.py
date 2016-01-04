@@ -1,24 +1,20 @@
-import sys
-
-sys.path[0:0] = [""]
 import unittest
+from nose.plugins.skip import SkipTest
 
-from pymongo import ReadPreference
+from pymongo import ReadPreference, MongoClient
 
+
+import mongoengine
+from mongoengine.connection import ConnectionError, connect
 from mongoengine.python_support import IS_PYMONGO_3
 
 if IS_PYMONGO_3:
-    from pymongo import MongoClient
-    CONN_CLASS = MongoClient
-    READ_PREF = ReadPreference.SECONDARY
+    from pymongo.errors import ServerSelectionTimeoutError as sste
 else:
-    from pymongo import ReplicaSetConnection
-    CONN_CLASS = ReplicaSetConnection
-    READ_PREF = ReadPreference.SECONDARY_ONLY
+    from mongoengine.connection import ConnectionError as sste
 
-import mongoengine
-from mongoengine import *
-from mongoengine.connection import ConnectionError
+CONN_CLASS = MongoClient
+READ_PREF = ReadPreference.SECONDARY
 
 
 class ConnectionTest(unittest.TestCase):
@@ -40,13 +36,11 @@ class ConnectionTest(unittest.TestCase):
         try:
             conn = connect(db='mongoenginetest',
                            host="mongodb://localhost/mongoenginetest?replicaSet=rs",
-                           read_preference=READ_PREF)
-        except ConnectionError, e:
-            return
-
-        if not isinstance(conn, CONN_CLASS):
-            # really???
-            return
+                           read_preference=READ_PREF,
+                           serverSelectionTimeoutMS=500)
+            conn.admin.command("ismaster")
+        except (ConnectionError, sste), e:
+            raise SkipTest('ReplicaSet test only works if you have a replica set rs running on port 27017')
 
         self.assertEqual(conn.read_preference, READ_PREF)
 

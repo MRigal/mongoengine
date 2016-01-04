@@ -685,18 +685,15 @@ class Document(BaseDocument):
         index_spec = index_spec.copy()
         fields = index_spec.pop('fields')
         drop_dups = kwargs.get('drop_dups', False)
-        if IS_PYMONGO_3 and drop_dups:
+        if drop_dups:
             msg = "drop_dups is deprecated and is removed when using PyMongo 3+."
             warnings.warn(msg, DeprecationWarning)
-        elif not IS_PYMONGO_3:
-            index_spec['drop_dups'] = drop_dups
+            if not IS_PYMONGO_3:
+                index_spec['drop_dups'] = drop_dups
         index_spec['background'] = background
         index_spec.update(kwargs)
 
-        if IS_PYMONGO_3:
-            return cls._get_collection().create_index(fields, **index_spec)
-        else:
-            return cls._get_collection().ensure_index(fields, **index_spec)
+        return cls._get_collection().create_index(fields, **index_spec)
 
     @classmethod
     def ensure_index(cls, key_or_list, drop_dups=False, background=False,
@@ -711,11 +708,11 @@ class Document(BaseDocument):
         :param drop_dups: Was removed/ignored with MongoDB >2.7.5. The value
             will be removed if PyMongo3+ is used
         """
-        if IS_PYMONGO_3 and drop_dups:
+        if drop_dups:
             msg = "drop_dups is deprecated and is removed when using PyMongo 3+."
             warnings.warn(msg, DeprecationWarning)
-        elif not IS_PYMONGO_3:
-            kwargs.update({'drop_dups': drop_dups})
+            if not IS_PYMONGO_3:
+                kwargs.update({'drop_dups': drop_dups})
         return cls.create_index(key_or_list, background=background, **kwargs)
 
     @classmethod
@@ -731,7 +728,7 @@ class Document(BaseDocument):
         drop_dups = cls._meta.get('index_drop_dups', False)
         index_opts = cls._meta.get('index_opts') or {}
         index_cls = cls._meta.get('index_cls', True)
-        if IS_PYMONGO_3 and drop_dups:
+        if drop_dups:
             msg = "drop_dups is deprecated and is removed when using PyMongo 3+."
             warnings.warn(msg, DeprecationWarning)
 

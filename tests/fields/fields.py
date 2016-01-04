@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-import sys
-from nose.plugins.skip import SkipTest
-
-sys.path[0:0] = [""]
-
 import datetime
 import unittest
 import uuid
@@ -11,11 +6,7 @@ import math
 import itertools
 import re
 
-try:
-    import dateutil
-except ImportError:
-    dateutil = None
-
+from nose.plugins.skip import SkipTest
 from decimal import Decimal
 
 from bson import Binary, DBRef, ObjectId
@@ -562,9 +553,8 @@ class FieldTest(unittest.TestCase):
         log.time = datetime.datetime.now().isoformat(' ')
         log.validate()
 
-        if dateutil:
-            log.time = datetime.datetime.now().isoformat('T')
-            log.validate()
+        log.time = datetime.datetime.now().isoformat('T')
+        log.validate()
 
         log.time = -1
         self.assertRaises(ValidationError, log.validate)
@@ -663,9 +653,8 @@ class FieldTest(unittest.TestCase):
             log1 = LogEntry.objects.get(date=query)
             self.assertEqual(log, log1)
 
-        if dateutil:
-            log1 = LogEntry.objects.get(date=d1.isoformat('T'))
-            self.assertEqual(log, log1)
+        log1 = LogEntry.objects.get(date=d1.isoformat('T'))
+        self.assertEqual(log, log1)
 
         LogEntry.drop_collection()
 
