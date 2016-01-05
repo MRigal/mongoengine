@@ -43,7 +43,7 @@ class TurnOffInheritanceTest(unittest.TestCase):
 
         # 3. Remove _types and _cls
         collection = Animal._get_collection()
-        collection.update({}, {"$unset": {"_types": 1, "_cls": 1}}, multi=True)
+        collection.update_many({}, {"$unset": {"_types": 1, "_cls": 1}})
 
         # 3. Confirm extra data is removed
         count = collection.find({"$or": [{'_types': {"$exists": True}},

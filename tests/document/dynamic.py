@@ -146,8 +146,6 @@ class DynamicTest(unittest.TestCase):
         p = self.Person()
         p.misc = {'hello': {'hello2': 'world'}}
         p.save()
-        # from pprint import pprint as pp; import pdb; pdb.set_trace();
-        print self.Person.objects(misc__hello__hello2='world')
         self.assertEqual(1, self.Person.objects(misc__hello__hello2='world').count())
 
     def test_complex_embedded_document_validation(self):

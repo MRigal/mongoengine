@@ -195,10 +195,10 @@ class SignalTests(unittest.TestCase):
             self.Author.objects.insert([a1], load_bulk=False)
 
         def load_existing_author():
-            a  = self.Author(name='Bill Shakespeare')
+            a = self.Author(name='Bill Shakespeare')
             a.save()
-            self.get_signal_output(lambda: None) # eliminate signal output
-            a1 = self.Author.objects(name='Bill Shakespeare')[0]
+            self.get_signal_output(lambda: None)  # eliminate signal output
+            self.Author.objects(name='Bill Shakespeare').first()
         
         self.assertEqual(self.get_signal_output(create_author), [
             "pre_init signal, Author",
@@ -235,22 +235,18 @@ class SignalTests(unittest.TestCase):
         signal_output = self.get_signal_output(load_existing_author)
         # test signal_output lines separately, because of random ObjectID after object load
         self.assertEqual(signal_output[0],
-            "pre_init signal, Author",
-        )
+                         "pre_init signal, Author")
         self.assertEqual(signal_output[2],
-            "post_init signal, Bill Shakespeare, document._created = False",
-        )
-
+                         "post_init signal, Bill Shakespeare, document._created = False")
 
         signal_output = self.get_signal_output(bulk_create_author_with_load)
 
         # The output of this signal is not entirely deterministic. The reloaded
         # object will have an object ID. Hence, we only check part of the output
-        self.assertEqual(signal_output[3], "pre_bulk_insert signal, [<Author: Bill Shakespeare>]"
-        )
+        self.assertEqual(signal_output[3],
+                         "pre_bulk_insert signal, [<Author: Bill Shakespeare>]")
         self.assertEqual(signal_output[-2:],
-            ["post_bulk_insert signal, [<Author: Bill Shakespeare>]",
-             "Is loaded",])
+                         ["post_bulk_insert signal, [<Author: Bill Shakespeare>]", "Is loaded"])
 
         self.assertEqual(self.get_signal_output(bulk_create_author_without_load), [
             "pre_init signal, Author",

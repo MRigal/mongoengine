@@ -264,12 +264,18 @@ class BaseQuerySet(object):
             result = None
         return result
 
-    def insert(self, doc_or_docs, load_bulk=True, write_concern=None):
+    def insert(self, doc_or_docs, load_bulk=True, write_concern=None,
+               ordered=True):
         """bulk insert documents
 
         :param doc_or_docs: a document or list of documents to be inserted
-        :param load_bulk (optional): If True returns the list of document
-            instances
+        :param load_bulk: (optional) If True returns the list of document
+            instances.
+        :param ordered: (optional) : If ``True`` (the default) documents will be
+            inserted on the server serially, in the order provided. If an error
+            occurs all remaining inserts are aborted. If ``False``, documents
+            will be inserted on the server in arbitrary order, possibly in
+            parallel, and all document inserts will be attempted
         :param write_concern: Extra keyword arguments are passed down to
                 :meth:`~pymongo.collection.Collection.insert`
                 which will be used as options for the resultant
@@ -282,11 +288,9 @@ class BaseQuerySet(object):
         return just ``ObjectIds``
 
         .. versionadded:: 0.5
+        .. versionchanged:: 0.11 ordered was added
         """
         Document = _import_class('Document')
-
-        if write_concern is None:
-            write_concern = {}
 
         docs = doc_or_docs
         return_one = False
@@ -307,13 +311,30 @@ class BaseQuerySet(object):
 
         signals.pre_bulk_insert.send(self._document, documents=docs)
         try:
-            ids = self._collection.insert(raw, **write_concern)
+            if write_concern:
+                collection = self._collection.with_options(write_concern=write_concern)
+            else:
+                collection = self._collection
+            if len(raw) == 1:
+                ids = [collection.insert_one(raw[0]).inserted_id]
+            else:
+                ids = collection.insert_many(raw, ordered=ordered).inserted_ids
         except pymongo.errors.DuplicateKeyError, err:
             message = 'Could not save document (%s)'
             raise NotUniqueError(message % unicode(err))
         except pymongo.errors.OperationFailure, err:
             message = 'Could not save document (%s)'
-            if re.match('^E1100[01] duplicate key', unicode(err)):
+            if isinstance(err, pymongo.errors.BulkWriteError):
+                # TODO: refactor error handling, since we loose information here,
+                # especially when some entries are already written
+                err = err.details.get('writeErrors')
+                error_messages = (e.get('errmsg') for e in err)
+                if any('E11000 duplicate key' in errmsg for errmsg in error_messages):
+                    message = u'Tried to save duplicate unique keys (%s)'
+                    raise NotUniqueError(message % unicode(err))
+                else:
+                    raise OperationError(message % unicode(err))
+            elif re.match('^E1100[01] duplicate key', unicode(err)):
                 # E11000 - duplicate key error index
                 # E11001 - duplicate key on update
                 message = u'Tried to save duplicate unique keys (%s)'
@@ -469,7 +490,7 @@ class BaseQuerySet(object):
                 raise OperationError(message)
             raise OperationError(u'Update failed (%s)' % unicode(err))
 
-
+    # TODO: use new update_one
     def upsert_one(self, write_concern=None, **update):
         """Overwrite or add the first document matched by the query.
 
@@ -487,7 +508,7 @@ class BaseQuerySet(object):
         """
 
         atomic_update = self.update(multi=False, upsert=True, write_concern=write_concern,
-                             full_result=True,**update)
+                                    full_result=True, **update)
 
         if atomic_update['updatedExisting']:
             document = self.get()
@@ -495,6 +516,7 @@ class BaseQuerySet(object):
             document = self._document.objects.with_id(atomic_update['upserted'])
         return document
 
+    # TODO: use new update_one
     def update_one(self, upsert=False, write_concern=None, **update):
         """Perform an atomic update on the fields of the first document
         matched by the query.
@@ -910,8 +932,9 @@ class BaseQuerySet(object):
         if IS_PYMONGO_3:
             msg = "snapshot is deprecated as it has no impact when using PyMongo 3+."
             warnings.warn(msg, DeprecationWarning)
-        queryset = self.clone()
-        queryset._snapshot = enabled
+        else:
+            queryset = self.clone()
+            queryset._snapshot = enabled
         return queryset
 
     def timeout(self, enabled):
@@ -936,10 +959,12 @@ class BaseQuerySet(object):
         if IS_PYMONGO_3:
             msg = "slave_okay is deprecated as it has no impact when using PyMongo 3+."
             warnings.warn(msg, DeprecationWarning)
-        queryset = self.clone()
-        queryset._slave_okay = enabled
+        else:
+            queryset = self.clone()
+            queryset._slave_okay = enabled
         return queryset
 
+    # TODO: change also here
     def read_preference(self, read_preference):
         """Change the read_preference when querying.
 
@@ -1465,7 +1490,7 @@ class BaseQuerySet(object):
             # level, not a cursor level. Thus, we need to get a cloned
             # collection object using `with_options` first.
             # TODO: enhance
-            if IS_PYMONGO_3 and self._read_preference is not None:
+            if self._read_preference and self._read_preference != self._collection.read_preference:
                 self._cursor_obj = self._collection\
                     .with_options(read_preference=self._read_preference)\
                     .find(self._query, **self._cursor_args)

@@ -79,8 +79,8 @@ class ConnectionTest(unittest.TestCase):
         """
         c = connect(db='mongoenginetest', alias='first')
         c.admin.command("ismaster")
-        c.admin.system.users.remove({})
-        c.mongoenginetest.system.users.remove({})
+        c.admin.system.users.delete_many({})
+        c.mongoenginetest.system.users.delete_many({})
 
         c.admin.add_user("admin", "password")
         c.admin.authenticate("admin", "password")
@@ -100,16 +100,16 @@ class ConnectionTest(unittest.TestCase):
         self.assertTrue(isinstance(db, pymongo.database.Database))
         self.assertEqual(db.name, 'mongoenginetest')
 
-        c.admin.system.users.remove({})
-        c.mongoenginetest.system.users.remove({})
+        c.admin.system.users.delete_many({})
+        c.mongoenginetest.system.users.delete_many({})
 
     def test_connect_uri_without_db(self):
         """Ensure connect() method works properly with uri's without database_name
         """
         c = connect(db='mongoenginetest', alias='admin')
         c.admin.command("ismaster")
-        c.admin.system.users.remove({})
-        c.mongoenginetest.system.users.remove({})
+        c.admin.system.users.delete_many({})
+        c.mongoenginetest.system.users.delete_many({})
 
         c.admin.add_user("admin", "password")
         c.admin.authenticate("admin", "password")
@@ -127,8 +127,8 @@ class ConnectionTest(unittest.TestCase):
         self.assertTrue(isinstance(db, pymongo.database.Database))
         self.assertEqual(db.name, 'mongoenginetest')
 
-        c.admin.system.users.remove({})
-        c.mongoenginetest.system.users.remove({})
+        c.admin.system.users.delete_many({})
+        c.mongoenginetest.system.users.delete_many({})
 
     def test_connect_uri_with_authsource(self):
         """Ensure that the connect() method works well with the option `authSource` in URI.
@@ -137,7 +137,7 @@ class ConnectionTest(unittest.TestCase):
         # Create users
         c = connect('mongoenginetest')
         c.admin.command("ismaster")
-        c.admin.system.users.remove({})
+        c.admin.system.users.delete_many({})
         c.admin.add_user('username2', 'password')
 
         # Authentication fails without "authSource"
@@ -155,7 +155,7 @@ class ConnectionTest(unittest.TestCase):
         self.assertEqual(db.name, 'mongoenginetest')
 
         # Clear all users
-        c.admin.system.users.remove({})
+        c.admin.system.users.delete_many({})
 
     def test_register_connection(self):
         """Ensure that connections with different aliases may be registered.

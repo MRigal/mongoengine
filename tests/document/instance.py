@@ -1431,7 +1431,7 @@ class InstanceTest(unittest.TestCase):
 
         user = User.objects.first()
         # Even if stored as ObjectId's internally mongoengine uses DBRefs
-        # As ObjectId's aren't automatically derefenced
+        # As ObjectId's aren't automatically dereferenced
         self.assertTrue(isinstance(user._data['orgs'][0], DBRef))
         self.assertTrue(isinstance(user.orgs[0], Organization))
         self.assertTrue(isinstance(user._data['orgs'][0], Organization))
@@ -2608,7 +2608,7 @@ class InstanceTest(unittest.TestCase):
 
         User.drop_collection()
 
-        User._get_collection().save({
+        User._get_collection().insert_one({
             'name': 'John',
             'foo': 'Bar',
             'data': [1, 2, 3]
@@ -2624,7 +2624,7 @@ class InstanceTest(unittest.TestCase):
 
         User.drop_collection()
 
-        User._get_collection().save({
+        User._get_collection().insert_one({
             'name': 'John',
             'foo': 'Bar',
             'data': [1, 2, 3]
@@ -2647,7 +2647,7 @@ class InstanceTest(unittest.TestCase):
 
         User.drop_collection()
 
-        User._get_collection().save({
+        User._get_collection().insert_one({
             'name': 'John',
             'thing': {
                 'name': 'My thing',
@@ -2670,7 +2670,7 @@ class InstanceTest(unittest.TestCase):
 
         User.drop_collection()
 
-        User._get_collection().save({
+        User._get_collection().insert_one({
             'name': 'John',
             'thing': {
                 'name': 'My thing',
@@ -2693,7 +2693,7 @@ class InstanceTest(unittest.TestCase):
 
         User.drop_collection()
 
-        User._get_collection().save({
+        User._get_collection().insert_one({
             'name': 'John',
             'thing': {
                 'name': 'My thing',

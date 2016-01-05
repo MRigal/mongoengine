@@ -774,7 +774,7 @@ class QuerySetTest(unittest.TestCase):
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            Blog.objects.insert(blogs)
+            Blog.objects.insert(blogs, load_bulk=True)
             if mongodb_version < (2, 6):
                 self.assertEqual(q, 2)  # 1 for insert, and 1 for in bulk fetch
             else:
@@ -789,9 +789,9 @@ class QuerySetTest(unittest.TestCase):
         post2 = Post(comments=[comment2, comment2])
         blog1 = Blog(title="code", posts=[post1, post2])
         blog2 = Blog(title="mongodb", posts=[post2, post1])
-        blog1, blog2 = Blog.objects.insert([blog1, blog2])
-        self.assertEqual(blog1.title, "code")
-        self.assertEqual(blog2.title, "mongodb")
+        blog1_doc, blog2_doc = Blog.objects.insert([blog1, blog2], load_bulk=True)
+        self.assertEqual(blog1_doc.title, "code")
+        self.assertEqual(blog2_doc.title, "mongodb")
 
         self.assertEqual(Blog.objects.count(), 2)
 
@@ -820,16 +820,15 @@ class QuerySetTest(unittest.TestCase):
         self.assertRaises(OperationError, throw_operation_error_not_a_document)
 
         Blog.drop_collection()
-
-        blog1 = Blog(title="code", posts=[post1, post2])
-        blog1 = Blog.objects.insert(blog1)
-        self.assertEqual(blog1.title, "code")
+        blog1_doc = Blog.objects.insert(blog1, load_bulk=True)
+        self.assertEqual(blog1_doc.title, "code")
         self.assertEqual(Blog.objects.count(), 1)
 
         Blog.drop_collection()
-        blog1 = Blog(title="code", posts=[post1, post2])
         obj_id = Blog.objects.insert(blog1, load_bulk=False)
         self.assertEqual(obj_id.__class__.__name__, 'ObjectId')
+        obj = Blog.objects.insert(blog2)
+        self.assertEqual(obj.__class__, Blog)
 
         Blog.drop_collection()
         post3 = Post(comments=[comment1, comment1])
@@ -838,14 +837,14 @@ class QuerySetTest(unittest.TestCase):
         blog3 = Blog(title="baz", posts=[post1, post2])
         Blog.objects.insert([blog1, blog2])
 
-        def throw_operation_error_not_unique():
-            Blog.objects.insert([blog2, blog3])
+        def throw_operation_error_not_unique(ordered):
+            Blog.objects.insert([blog2, blog3], ordered=ordered)
 
-        self.assertRaises(NotUniqueError, throw_operation_error_not_unique)
+        self.assertRaises(NotUniqueError, throw_operation_error_not_unique, True)
         self.assertEqual(Blog.objects.count(), 2)
 
-        Blog.objects.insert([blog2, blog3], write_concern={"w": 0,
-                                                           'continue_on_error': True})
+        # test we raise an error but still insert the other objects
+        self.assertRaises(NotUniqueError, throw_operation_error_not_unique, False)
         self.assertEqual(Blog.objects.count(), 3)
 
     def test_get_changed_fields_query_count(self):
@@ -1144,7 +1143,6 @@ class QuerySetTest(unittest.TestCase):
         with db_ops_tracker() as q:
             BlogPost.objects.filter(title='whatever').order_by().first()
             self.assertEqual(len(q.get_ops()), 1)
-            print q.get_ops()[0]['query']
             self.assertFalse('$orderby' in q.get_ops()[0]['query'])
 
     def test_no_ordering_for_get(self):
@@ -3707,7 +3705,7 @@ class QuerySetTest(unittest.TestCase):
             fielda = IntField()
             fieldb = IntField()
 
-        IntPair.objects._collection.remove()
+        IntPair.objects._collection.delete_many({})
 
         a = IntPair(fielda=1, fieldb=1)
         b = IntPair(fielda=1, fieldb=2)
@@ -4805,7 +4803,7 @@ class QuerySetTest(unittest.TestCase):
         class Person(Document):
             name = StringField()
         Person.objects.delete()
-        Person._get_collection().update({"name": "a"}, {"$set": {"_id": ""}}, upsert=True)
+        Person._get_collection().update_one({"name": "a"}, {"$set": {"_id": ""}}, upsert=True)
         for p in Person.objects():
             self.assertEqual(p.name, 'a')
 

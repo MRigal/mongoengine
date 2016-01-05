@@ -170,7 +170,7 @@ class Document(BaseDocument):
         return get_db(cls._meta.get("db_alias", DEFAULT_CONNECTION_NAME))
 
     @classmethod
-    def _get_collection(cls):
+    def _get_collection(cls, read_preference=None, write_concern=None):
         """Returns the collection for the document."""
         # TODO: use new get_collection() with PyMongo3 ?
         if not hasattr(cls, '_collection') or cls._collection is None:
@@ -208,6 +208,8 @@ class Document(BaseDocument):
                 cls._collection = db[collection_name]
             if cls._meta.get('auto_create_index', True):
                 cls.ensure_indexes()
+        if read_preference or write_concern:
+            return cls._collection.with_options(read_preference=read_preference, write_concern=write_concern)
         return cls._collection
 
     def modify(self, query={}, **update):
@@ -262,7 +264,7 @@ class Document(BaseDocument):
             True.
         :param write_concern: Extra keyword arguments are passed down to
             :meth:`~pymongo.collection.Collection.save` OR
-            :meth:`~pymongo.collection.Collection.insert`
+            :meth:`~pymongo.collection.Collection.insert_one`
             which will be used as options for the resultant
             ``getLastError`` command.  For example,
             ``save(..., write_concern={w: 2, fsync: True}, ...)`` will
@@ -303,9 +305,6 @@ class Document(BaseDocument):
         if validate:
             self.validate(clean=clean)
 
-        if write_concern is None:
-            write_concern = {"w": 1}
-
         doc = self.to_mongo()
 
         created = ('_id' not in doc or self._created or force_insert)
@@ -314,14 +313,17 @@ class Document(BaseDocument):
                                               created=created)
 
         try:
-            collection = self._get_collection()
             if self._meta.get('auto_create_index', True):
                 self.ensure_indexes()
+            if write_concern:
+                collection = self._get_collection(write_concern=write_concern)
+            else:
+                collection = self._get_collection()
             if created:
                 if force_insert:
-                    object_id = collection.insert(doc, **write_concern)
+                    object_id = collection.insert_one(doc).inserted_id
                 else:
-                    object_id = collection.save(doc, **write_concern)
+                    object_id = collection.save(doc)
                     # In PyMongo 3.0, the save() call calls internally the _update() call
                     # but they forget to return the _id value passed back, therefore getting it back here
                     # Correct behaviour in 2.X and in 3.0.1+ versions
@@ -364,7 +366,7 @@ class Document(BaseDocument):
                 if updates or removals:
                     upsert = save_condition is None
                     last_error = collection.update(select_dict, update_query,
-                                                   upsert=upsert, **write_concern)
+                                                   upsert=upsert)
                     if not upsert and last_error["n"] == 0:
                         raise SaveConditionError('Race condition preventing'
                                                  ' document update detected')
@@ -533,7 +535,8 @@ class Document(BaseDocument):
         self.__objects._collection_obj = collection
         return self
 
-    def switch_collection(self, collection_name, keep_created=True):
+    def switch_collection(self, collection_name, keep_created=True,
+                          write_concern=None, read_preference=None):
         """
         Temporarily switch the collection for a document instance.
 
@@ -554,7 +557,7 @@ class Document(BaseDocument):
             if you need to read from another database
         """
         with switch_collection(self.__class__, collection_name) as cls:
-            collection = cls._get_collection()
+            collection = cls._get_collection(write_concern=write_concern, read_preference=read_preference)
         self._get_collection = lambda: collection
         self._collection = collection
         self._created = True if not keep_created else self._created
@@ -588,7 +591,6 @@ class Document(BaseDocument):
             fields = fields[1:]
         elif "max_depth" in kwargs:
             max_depth = kwargs["max_depth"]
-
         if not self.pk:
             raise self.DoesNotExist("Document does not exist")
         obj = self._qs.read_preference(ReadPreference.PRIMARY).filter(
