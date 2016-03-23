@@ -13,6 +13,7 @@ from bson import json_util
 import pymongo
 import pymongo.errors
 from pymongo.common import validate_read_preference
+from pymongo.write_concern import WriteConcern
 from pymongo.collection import ReturnDocument
 
 from mongoengine import signals
@@ -462,6 +463,11 @@ class BaseQuerySet(object):
             raise OperationError("No update parameters, would remove data")
 
         if write_concern is None:
+            write_concern = {}
+        elif isinstance(write_concern, WriteConcern):
+            msg = "You can't update the write_concern with a WriteConcern instance." + \
+                  "Get another connection with the proper WriteConcern and apply update_one or update_many."
+            warnings.warn(msg, DeprecationWarning)
             write_concern = {}
 
         queryset = self.clone()

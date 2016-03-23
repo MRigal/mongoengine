@@ -6,6 +6,7 @@ from nose.plugins.skip import SkipTest
 from datetime import datetime, timedelta
 
 import pymongo
+from pymongo.write_concern import WriteConcern
 from pymongo.errors import ConfigurationError
 from pymongo.read_preferences import ReadPreference
 
@@ -320,28 +321,34 @@ class QuerySetTest(unittest.TestCase):
         self.assertEqual(query.count(), 1)
 
     def test_update_write_concern(self):
-        """Test that passing write_concern works"""
+        """Test that passing write_concern does not work anymore directly"""
 
         self.Person.drop_collection()
 
-        write_concern = {"fsync": True}
+        write_concern = WriteConcern(fsync=True)
 
         author = self.Person.objects.create(name='Test User')
         author.save(write_concern=write_concern)
 
         result = self.Person.objects.update(
-            set__name='Ross', write_concern={"w": 1})
+            set__name='Ross', write_concern=WriteConcern(w=1))
         self.assertEqual(result, 1)
         result = self.Person.objects.update(
-            set__name='Ross', write_concern={"w": 0})
-        self.assertEqual(result, None)
+            set__name='Ross', write_concern=WriteConcern(w=0))
+        # This use to be None using PyMongo <2.9
+        self.assertEqual(result, 1)
 
         result = self.Person.objects.update_one(
-            set__name='Test User', write_concern={"w": 1})
+            set__name='Test User', write_concern=WriteConcern(w=1))
         self.assertEqual(result, 1)
         result = self.Person.objects.update_one(
-            set__name='Test User', write_concern={"w": 0})
-        self.assertEqual(result, None)
+            set__name='Test User', write_concern=WriteConcern(w=0))
+        # This use to be None using PyMongo <2.9
+        self.assertEqual(result, 1)
+
+    def test_update_behaves_properly_on_connections_with_different_write_concerns(self):
+        # TODO: write tests
+        pass
 
     def test_update_update_has_a_value(self):
         """Test to ensure that update is passed a value to update to"""
